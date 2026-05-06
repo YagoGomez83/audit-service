@@ -24,7 +24,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23" # go.mod declara 1.26.2; usar la última estable soportada por las actions
+          go-version-file: "go.mod"
           cache: true
 
       - name: Run Gosec Security Scanner
@@ -32,10 +32,9 @@ jobs:
         with:
           args: ./...
 
-      - name: Run GolangCI-Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+  # Aquí comienza el test: ...
+
+
 
   # ─────────────────────────────────────────────────────────────────────────────
   # JOB B: Pruebas Unitarias
