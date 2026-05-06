@@ -1,0 +1,159 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Microservicio DevSecOps para registro inmutable de auditoría.",
+        "title": "Audit Service API",
+        "contact": {
+            "name": "YagoGomez83"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/audit": {
+            "get": {
+                "description": "Recupera un listado paginado de registros, ordenados del más reciente al más antiguo.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit"
+                ],
+                "summary": "Obtener logs de auditoría",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cantidad máxima de registros (default 10, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cantidad de registros a saltar (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.AuditLog"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registra una nueva acción en el sistema. El campo \"action\" es obligatorio.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit"
+                ],
+                "summary": "Crear un log de auditoría",
+                "parameters": [
+                    {
+                        "description": "Datos del log a crear",
+                        "name": "log",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuditLog"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuditLog"
+                        }
+                    },
+                    "400": {
+                        "description": "Error de validación (ej. falta action)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "domain.AuditLog": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "obligatorio, nunca NULL",
+                    "type": "string"
+                },
+                "action_details": {
+                    "description": "bytes crudos: evita parsear JSON innecesariamente",
+                    "type": "object"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "entity_id": {
+                    "description": "puntero: id de entidad opcional",
+                    "type": "string"
+                },
+                "entity_type": {
+                    "description": "puntero: entidad opcional",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "string para soportar UUID de PostgreSQL",
+                    "type": "string"
+                },
+                "ip_address": {
+                    "description": "puntero: puede no haber IP",
+                    "type": "string"
+                },
+                "user_agent": {
+                    "description": "puntero: puede no haber agente",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "puntero: puede ser NULL (acción sin usuario)",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

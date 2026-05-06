@@ -1,0 +1,52 @@
+# Variables globales
+@baseUrl = http://localhost:8080/api/v1
+
+### ------------------------------------------------------------------------
+### 1. Crear un Registro de Auditoría (Falla de Login)
+### ------------------------------------------------------------------------
+POST {{baseUrl}}/audit
+Content-Type: application/json
+
+{
+  "action": "LOGIN_FAILED",
+  "entity_type": "auth_system",
+  "ip_address": "192.168.1.105",
+  "user_agent": "VSCode REST Client",
+  "action_details": {
+    "reason": "invalid_password",
+    "attempts": 5,
+    "severity": "high"
+  }
+}
+
+### ------------------------------------------------------------------------
+### 2. Crear un Registro de Auditoría (Exportación de Datos)
+### ------------------------------------------------------------------------
+POST {{baseUrl}}/audit
+Content-Type: application/json
+
+{
+  "action": "DATA_EXPORT",
+  "entity_type": "financial_records",
+  "ip_address": "10.0.0.42",
+  "user_agent": "VSCode REST Client",
+  "action_details": {
+    "rows_exported": 5000,
+    "format": "csv"
+  }
+}
+
+### ------------------------------------------------------------------------
+### 3. Obtener Logs (Paginación por defecto)
+### ------------------------------------------------------------------------
+GET {{baseUrl}}/audit?limit=5&offset=0
+
+### ------------------------------------------------------------------------
+### 4. Prueba de Seguridad (Forzando Error HTTP 400 - Sin Acción)
+### ------------------------------------------------------------------------
+POST {{baseUrl}}/audit
+Content-Type: application/json
+
+{
+  "entity_type": "auth_system"
+}

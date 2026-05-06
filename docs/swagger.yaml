@@ -1,0 +1,108 @@
+basePath: /api/v1
+definitions:
+  domain.AuditLog:
+    properties:
+      action:
+        description: obligatorio, nunca NULL
+        type: string
+      action_details:
+        description: 'bytes crudos: evita parsear JSON innecesariamente'
+        type: object
+      created_at:
+        type: string
+      entity_id:
+        description: 'puntero: id de entidad opcional'
+        type: string
+      entity_type:
+        description: 'puntero: entidad opcional'
+        type: string
+      id:
+        description: string para soportar UUID de PostgreSQL
+        type: string
+      ip_address:
+        description: 'puntero: puede no haber IP'
+        type: string
+      user_agent:
+        description: 'puntero: puede no haber agente'
+        type: string
+      user_id:
+        description: 'puntero: puede ser NULL (acción sin usuario)'
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: YagoGomez83
+  description: Microservicio DevSecOps para registro inmutable de auditoría.
+  license:
+    name: MIT
+  title: Audit Service API
+  version: "1.0"
+paths:
+  /audit:
+    get:
+      description: Recupera un listado paginado de registros, ordenados del más reciente
+        al más antiguo.
+      parameters:
+      - description: Cantidad máxima de registros (default 10, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Cantidad de registros a saltar (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.AuditLog'
+            type: array
+        "500":
+          description: Error interno del servidor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener logs de auditoría
+      tags:
+      - audit
+    post:
+      consumes:
+      - application/json
+      description: Registra una nueva acción en el sistema. El campo "action" es obligatorio.
+      parameters:
+      - description: Datos del log a crear
+        in: body
+        name: log
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AuditLog'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.AuditLog'
+        "400":
+          description: Error de validación (ej. falta action)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno del servidor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear un log de auditoría
+      tags:
+      - audit
+schemes:
+- http
+swagger: "2.0"

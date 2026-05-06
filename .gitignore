@@ -1,0 +1,15 @@
+# Binarios compilados
+/bin/
+/audit-service
+
+# Archivos de entorno (¡CRÍTICO PARA SEGURIDAD!)
+.env
+*.env
+
+# Archivos de IDEs
+.vscode/
+.idea/
+
+# Herramientas de Go
+vendor/
+go.work

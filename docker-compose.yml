@@ -1,0 +1,87 @@
+# docker-compose.yml
+# Orquesta tres servicios que cooperan para levantar el sistema completo:
+#   1. postgres      → base de datos
+#   2. migrate       → aplica las migraciones SQL al arrancar
+#   3. audit-service → nuestra API de Go
+#
+# Uso:
+#   docker compose up --build          (primera vez o si cambias código)
+#   docker compose up -d               (modo background)
+#   docker compose down -v             (destruye contenedores Y volumen de datos)
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Servicio 1: PostgreSQL
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: audit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      # Expone el puerto al host solo para desarrollo local (psql, DBeaver, etc.)
+      # En producción, elimina esta sección para que la BD no sea accesible desde fuera.
+      - "5432:5432"
+    volumes:
+      # Volumen nombrado: los datos de PostgreSQL sobreviven a docker compose down
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Docker Compose esperará a que este check pase antes de iniciar los dependientes
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Servicio 2: Migrate (efímero)
+  # Corre una sola vez, aplica las migraciones y termina con exit code 0.
+  # ---------------------------------------------------------------------------
+  migrate:
+    image: migrate/migrate:v4.18.3
+    container_name: audit-migrate
+    restart: on-failure
+    volumes:
+      # Monta la carpeta de migraciones dentro del contenedor
+      - ./migrations:/migrations:ro
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME\
+        }?sslmode=disable"
+      - "up"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Servicio 3: API de Go (audit-service)
+  # ---------------------------------------------------------------------------
+  audit-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audit-service
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      SERVER_PORT: "8080"
+      DB_HOST: postgres # Nombre del servicio en la red interna de Docker
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      migrate:
+        # Arranca la API solo cuando las migraciones terminen exitosamente
+        condition: service_completed_successfully
+
+# -----------------------------------------------------------------------------
+# Volúmenes nombrados (gestionados por Docker, persisten entre reinicios)
+# -----------------------------------------------------------------------------
+volumes:
+  postgres_data:

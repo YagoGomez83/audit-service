@@ -1,0 +1,32 @@
+# .dockerignore
+# Evita que Docker envíe archivos innecesarios al daemon durante el build.
+# Reduce el tiempo de build y el tamaño del contexto.
+
+# Control de versiones
+.git/
+.gitignore
+
+# Variables de entorno locales (¡NUNCA deben llegar a una imagen Docker!)
+.env
+*.env
+
+# Archivos Docker (no se necesitan dentro de la imagen)
+Dockerfile*
+docker-compose*.yml
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Binarios compilados localmente
+/bin/
+/audit-service
+
+# Dependencias vendorizadas (Go usa el módulo cache en el build)
+vendor/
+
+# Documentación y archivos Markdown
+*.md
+README*
