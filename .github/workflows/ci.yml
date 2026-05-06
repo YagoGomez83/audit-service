@@ -1,0 +1,86 @@
+name: DevSecOps CI Pipeline
+
+# Triggers: El pipeline se ejecuta en push a la rama principal
+# y al abrir/actualizar un Pull Request.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB A: Seguridad Estática (SAST) y Calidad de Código (Linting)
+  # Ejecuta gosec para detectar vulnerabilidades en el AST del código Go,
+  # y golangci-lint para verificar estándares de calidad de escritura.
+  # ─────────────────────────────────────────────────────────────────────────────
+  security-and-lint:
+    name: Security Scan (SAST) & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'  # go.mod declara 1.26.2; usar la última estable soportada por las actions
+          cache: true
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
+      - name: Run GolangCI-Lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB B: Pruebas Unitarias
+  # Gracias al Repository Pattern con Mocks (testify), este job no requiere
+  # ningún servicio externo (PostgreSQL). Corre en milisegundos.
+  # ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Install Dependencies
+        run: go mod download
+
+      - name: Run Tests with Coverage
+        run: go test -v -coverprofile=coverage.out ./...
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB C: Validación de Construcción del Contenedor
+  # Principio Fail-Fast: este job solo se ejecuta si A y B pasaron con éxito.
+  # Valida que el Dockerfile multi-stage compila el binario correctamente
+  # sin subir ninguna imagen a un registry.
+  # ─────────────────────────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: [security-and-lint, test]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t audit-service:ci-${{ github.sha }} .
