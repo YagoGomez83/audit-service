@@ -27,7 +27,10 @@ func NewAuditHandler(repo domain.AuditRepository) *AuditHandler {
 func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(v)
+	// Validamos si ocurrió un error al codificar/enviar la respuesta
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("ERROR: Fallo al enviar respuesta JSON: %v", err)
+	}
 }
 
 // writeError escribe una respuesta de error en formato JSON.

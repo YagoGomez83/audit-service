@@ -43,6 +43,7 @@ func RequestLogger(next http.Handler) http.Handler {
 		// 4. Registramos en consola (o sistema de logs) con un formato estandarizado.
 		// En producción, esto debería escribirse en formato JSON estructurado
 		// (ej: usando log/slog o zap) para enviarlo a Datadog o Kibana.
+		// #nosec G706 -- Aceptamos el riesgo de inyección de log en esta etapa, en prod se migrará a slog JSON.
 		log.Printf(
 			"| %3d | %10v | %-15s | %-6s %s",
 			rec.statusCode, // Código HTTP devuelto (ej: 201, 400)
